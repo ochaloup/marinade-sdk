@@ -1,9 +1,11 @@
 //use std::convert::TryInto;
 
-use borsh::{BorshSerialize, BorshDeserialize};
-use solana_program::{pubkey::Pubkey, program_error::ProgramError, msg, account_info::AccountInfo, entrypoint::ProgramResult};
-use crate::{calc::proportional, checks::check_address, error::CommonError, list::List, ID};
-
+use crate::{calc::proportional, checks::check_address, error::CommonError, state::list::List, ID};
+use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::{
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    pubkey::Pubkey,
+};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, BorshSerialize, BorshDeserialize)]
 pub struct ValidatorRecord {

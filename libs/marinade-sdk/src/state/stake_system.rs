@@ -1,8 +1,14 @@
-use borsh::{BorshSerialize, BorshDeserialize};
-use solana_program::{pubkey::Pubkey, msg, account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError};
-use crate::{ID, checks::check_address, list::List, located::Located, state::State};
-
-
+use crate::{
+    checks::check_address,
+    located::Located,
+    state::{list::List, marinade::Marinade},
+    ID,
+};
+use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::{
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    pubkey::Pubkey,
+};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, BorshSerialize, BorshDeserialize)]
 pub struct StakeRecord {
@@ -98,7 +104,7 @@ pub trait StakeSystemHelpers {
 
 impl<T> StakeSystemHelpers for T
 where
-    T: Located<State>,
+    T: Located<Marinade>,
 {
     fn stake_withdraw_authority(&self) -> Pubkey {
         self.with_stake_withdraw_authority_seeds(|seeds| {

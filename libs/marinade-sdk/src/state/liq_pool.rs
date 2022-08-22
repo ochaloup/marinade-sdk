@@ -1,11 +1,12 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::{entrypoint::ProgramResult, pubkey::Pubkey, msg, program_error::ProgramError};
+use solana_program::{entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey};
 
 use crate::{
-    state::State, calc::proportional, checks::check_address, error::CommonError, fee::Fee, located::Located, ID,
+    calc::proportional, checks::check_address, error::CommonError, state::fee::Fee, located::Located,
+    state::marinade::Marinade, ID,
 };
 
-#[derive(Clone, BorshSerialize, BorshDeserialize, Debug)]
+#[derive(Clone, BorshDeserialize, BorshSerialize, Debug)]
 pub struct LiqPool {
     pub lp_mint: Pubkey,
     pub lp_mint_authority_bump_seed: u8,
@@ -142,7 +143,7 @@ pub trait LiqPoolHelpers {
 
 impl<T> LiqPoolHelpers for T
 where
-    T: Located<State>,
+    T: Located<Marinade>,
 {
     // call a function adding lp_mint_authority_seeds
     fn with_lp_mint_authority_seeds<R, F: FnOnce(&[&[u8]]) -> R>(&self, f: F) -> R {

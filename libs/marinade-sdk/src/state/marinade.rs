@@ -1,25 +1,25 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    account_info::AccountInfo, entrypoint::ProgramResult, instruction::Instruction, msg,
+    program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
 };
 
 use crate::{
     calc::{shares_from_value, value_from_shares},
     checks::check_address,
     error::CommonError,
-    fee::Fee,
-    liq_pool::LiqPool,
+    instructions::config_lp::{ConfigLpAccounts, ConfigLpData},
     located::Located,
-    stake_system::StakeSystem,
-    validator_system::ValidatorSystem,
+    state::{
+        fee::Fee, liq_pool::LiqPool, stake_system::StakeSystem, validator_system::ValidatorSystem,
+    },
     ID,
 };
-use micro_anchor::{Discriminator, Owner};
+use micro_anchor::{AccountDeserialize, Discriminator, InstructionBuilder, Owner};
 use std::mem::MaybeUninit;
 
-#[derive(Debug, BorshSerialize, BorshDeserialize)]
-pub struct State {
+#[derive(Debug, BorshSerialize, BorshDeserialize, Clone)]
+pub struct Marinade {
     pub msol_mint: Pubkey,
 
     pub admin_authority: Pubkey,
@@ -65,7 +65,7 @@ pub struct State {
     pub emergency_cooling_down: u64,
 }
 
-impl State {
+impl Marinade {
     pub const PRICE_DENOMINATOR: u64 = 0x1_0000_0000;
     /// Suffix for reserve account seed
     pub const RESERVE_SEED: &'static [u8] = b"reserve";
@@ -85,7 +85,7 @@ impl State {
 
     pub fn find_msol_mint_authority(state: &Pubkey) -> (Pubkey, u8) {
         Pubkey::find_program_address(
-            &[&state.to_bytes()[..32], State::MSOL_MINT_AUTHORITY_SEED],
+            &[&state.to_bytes()[..32], Marinade::MSOL_MINT_AUTHORITY_SEED],
             &ID,
         )
     }
@@ -280,19 +280,9 @@ impl State {
             .ok_or(CommonError::CalculationFailure)?;
         Ok(())
     }
-
-    /*
-    pub fn register_stake_order(&mut self, lamports_amount: u64) {
-        self.epoch_stake_orders += lamports_amount;
-    }
-
-    pub fn register_unstake_order(&mut self, unstaker_index: u32, lamports_amount: u64) {
-        self.epoch_unstake_orders += lamports_amount;
-        self.unstakers[unstaker_index as usize].amount += lamports_amount;
-    }*/
 }
 
-pub trait StateHelpers {
+pub trait MarinadeHelpers {
     fn msol_mint_authority(&self) -> Pubkey;
     fn with_msol_mint_authority_seeds<R, F: FnOnce(&[&[u8]]) -> R>(&self, f: F) -> R;
 
@@ -301,11 +291,14 @@ pub trait StateHelpers {
 
     fn check_reserve_address(&self, reserve: &Pubkey) -> ProgramResult;
     fn check_msol_mint_authority(&self, msol_mint_authority: &Pubkey) -> ProgramResult;
+
+    // Instructions
+    fn config_lp_instruction(&self, data: ConfigLpData) -> Instruction;
 }
 
-impl<T> StateHelpers for T
+impl<T> MarinadeHelpers for T
 where
-    T: Located<State>,
+    T: Located<Marinade>,
 {
     fn msol_mint_authority(&self) -> Pubkey {
         self.with_msol_mint_authority_seeds(|seeds| {
@@ -316,7 +309,7 @@ where
     fn with_msol_mint_authority_seeds<R, F: FnOnce(&[&[u8]]) -> R>(&self, f: F) -> R {
         f(&[
             &self.key().to_bytes()[..32],
-            State::MSOL_MINT_AUTHORITY_SEED,
+            Marinade::MSOL_MINT_AUTHORITY_SEED,
             &[self.as_ref().msol_mint_authority_bump_seed],
         ])
     }
@@ -328,7 +321,7 @@ where
     fn with_reserve_seeds<R, F: FnOnce(&[&[u8]]) -> R>(&self, f: F) -> R {
         f(&[
             &self.key().to_bytes()[..32],
-            State::RESERVE_SEED,
+            Marinade::RESERVE_SEED,
             &[self.as_ref().reserve_bump_seed],
         ])
     }
@@ -344,14 +337,28 @@ where
             "msol_mint_authority",
         )
     }
+
+    // Instructions
+    fn config_lp_instruction(&self, data: ConfigLpData) -> Instruction {
+        let builder = InstructionBuilder {
+            accounts: ConfigLpAccounts {
+                marinade: self.key(),
+                admin_authority: self.as_ref().admin_authority,
+            },
+            data,
+        };
+        (&builder).into()
+    }
 }
 
-impl Discriminator for State {
+impl Discriminator for Marinade {
     const DISCRIMINATOR: [u8; 8] = [216, 146, 107, 94, 104, 75, 182, 177];
 }
 
-impl Owner for State {
+impl Owner for Marinade {
     fn owner() -> Pubkey {
         crate::ID
     }
 }
+
+impl AccountDeserialize for Marinade {}
