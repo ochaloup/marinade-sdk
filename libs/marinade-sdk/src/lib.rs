@@ -1,14 +1,16 @@
-pub mod error;
-pub mod list;
-pub mod checks;
-pub mod located;
 pub mod calc;
+pub mod checks;
+pub mod error;
 pub mod fee;
 pub mod liq_pool;
+pub mod list;
+pub mod located;
 pub mod stake_system;
-pub mod validator_system;
 pub mod state;
+pub mod ticket_account;
+pub mod validator_system;
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
 
 /// The static program ID

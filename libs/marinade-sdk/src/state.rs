@@ -1,16 +1,21 @@
-use borsh::{BorshSerialize, BorshDeserialize};
-use solana_program::{pubkey::Pubkey, entrypoint::ProgramResult, account_info::AccountInfo, program_error::ProgramError, program_pack::Pack, msg};
+use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::{
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    program_pack::Pack, pubkey::Pubkey,
+};
 
 use crate::{
     calc::{shares_from_value, value_from_shares},
     checks::check_address,
     error::CommonError,
+    fee::Fee,
     liq_pool::LiqPool,
     located::Located,
     stake_system::StakeSystem,
     validator_system::ValidatorSystem,
-    ID, fee::Fee,
+    ID,
 };
+use micro_anchor::{Discriminator, Owner};
 use std::mem::MaybeUninit;
 
 #[derive(Debug, BorshSerialize, BorshDeserialize)]
@@ -338,5 +343,15 @@ where
             &self.msol_mint_authority(),
             "msol_mint_authority",
         )
+    }
+}
+
+impl Discriminator for State {
+    const DISCRIMINATOR: [u8; 8] = [216, 146, 107, 94, 104, 75, 182, 177];
+}
+
+impl Owner for State {
+    fn owner() -> Pubkey {
+        crate::ID
     }
 }
