@@ -827,6 +827,7 @@ name = "micro-anchor"
 version = "0.1.0"
 dependencies = [
  "borsh",
+ "derive_more",
  "solana-program",
 ]
 

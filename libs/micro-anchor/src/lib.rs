@@ -1,6 +1,7 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, error::Error};
 
 use borsh::{BorshDeserialize, BorshSerialize};
+use derive_more::{Display, Error};
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -19,11 +20,13 @@ pub trait Owner {
     fn owner() -> Pubkey;
 }
 
+#[derive(Debug, Display, Error)]
 pub enum AccountDeserializeError {
     DiscriminatorNotFound,
     DiscriminatorMismatch,
     DidNotDeserialize,
 }
+
 
 /// A data structure that can be deserialized and stored into account storage,
 /// i.e. an
