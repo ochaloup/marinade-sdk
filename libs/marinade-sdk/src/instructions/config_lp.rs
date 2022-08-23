@@ -17,6 +17,32 @@ impl Discriminator for ConfigLpData {
 
 impl InstructionData for ConfigLpData {}
 
+impl ConfigLpData {
+    pub fn with_min_fee(mut self, v: Fee) -> Self {
+        let old = self.min_fee.replace(v);
+        assert!(old.is_none(), "Min fee was already set");
+        self
+    }
+
+    pub fn with_max_fee(mut self, v: Fee) -> Self {
+        let old = self.max_fee.replace(v);
+        assert!(old.is_none(), "Max fee was already set");
+        self
+    }
+
+    pub fn with_liquidity_target(mut self, v: u64) -> Self {
+        let old = self.liquidity_target.replace(v);
+        assert!(old.is_none(), "Liquidity target was already set");
+        self
+    }
+
+    pub fn with_treasury_cut(mut self, v: Fee) -> Self {
+        let old = self.treasury_cut.replace(v);
+        assert!(old.is_none(), "Treasury cut was already set");
+        self
+    }
+}
+
 pub struct ConfigLpAccounts {
     pub marinade: Pubkey,
     pub admin_authority: Pubkey,
