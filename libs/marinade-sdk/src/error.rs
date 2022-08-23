@@ -1,7 +1,8 @@
+use derive_more::Display;
 use solana_program::program_error::ProgramError;
 
 #[repr(u32)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Display)]
 pub enum CommonError {
     WrongReserveOwner,
     NonEmptyReserveData,

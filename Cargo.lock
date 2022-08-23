@@ -793,6 +793,7 @@ name = "marinade-sdk"
 version = "0.1.0"
 dependencies = [
  "borsh",
+ "derive_more",
  "micro-anchor",
  "solana-program",
  "spl-token",
