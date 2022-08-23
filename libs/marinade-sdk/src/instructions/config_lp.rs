@@ -12,7 +12,7 @@ pub struct ConfigLpData {
 }
 
 impl Discriminator for ConfigLpData {
-    const DISCRIMINATOR: [u8; 8] = [1, 2, 3, 4, 5, 6, 7, 8];
+    const DISCRIMINATOR: [u8; 8] = [10, 24, 168, 119, 86, 48, 225, 17];
 }
 
 impl InstructionData for ConfigLpData {}
