@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, error::Error};
+use std::{error::Error, marker::PhantomData};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use derive_more::{Display, Error};
@@ -26,7 +26,6 @@ pub enum AccountDeserializeError {
     DiscriminatorMismatch,
     DidNotDeserialize,
 }
-
 
 /// A data structure that can be deserialized and stored into account storage,
 /// i.e. an

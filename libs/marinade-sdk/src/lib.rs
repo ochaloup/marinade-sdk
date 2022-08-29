@@ -1,9 +1,9 @@
 pub mod calc;
 pub mod checks;
 pub mod error;
+pub mod instructions;
 pub mod located;
 pub mod state;
-pub mod instructions;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;

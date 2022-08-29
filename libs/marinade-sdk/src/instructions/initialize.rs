@@ -1,6 +1,6 @@
-use solana_program::{pubkey::Pubkey, account_info::AccountInfo};
-use borsh::{BorshDeserialize, BorshSerialize};
 use crate::state::fee::Fee;
+use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 
 pub struct InitializeAccountInfos<'info> {
     pub creator_authority: AccountInfo<'info>,
@@ -25,7 +25,7 @@ pub struct InitializeAccountInfos<'info> {
 pub struct LiqPoolInitializeAccountInfos<'info> {
     pub lp_mint: AccountInfo<'info>,
     pub sol_leg_pda: AccountInfo<'info>,
-    pub msol_leg: AccountInfo<'info>
+    pub msol_leg: AccountInfo<'info>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, BorshSerialize, BorshDeserialize)]

@@ -1,2 +1,2 @@
-pub mod initialize;
 pub mod config_lp;
+pub mod initialize;
