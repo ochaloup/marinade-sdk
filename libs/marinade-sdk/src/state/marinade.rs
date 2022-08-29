@@ -8,6 +8,7 @@ use crate::{
     calc::{shares_from_value, value_from_shares},
     checks::check_address,
     error::CommonError,
+    instructions::change_authority::{ChangeAuthorityAccounts, ChangeAuthorityData},
     instructions::config_lp::{ConfigLpAccounts, ConfigLpData},
     located::Located,
     state::{
@@ -294,6 +295,7 @@ pub trait MarinadeHelpers {
 
     // Instructions
     fn config_lp_instruction(&self, data: ConfigLpData) -> Instruction;
+    fn change_authority_instruction(&self, data: ChangeAuthorityData) -> Instruction;
 }
 
 impl<T> MarinadeHelpers for T
@@ -342,6 +344,17 @@ where
     fn config_lp_instruction(&self, data: ConfigLpData) -> Instruction {
         let builder = InstructionBuilder {
             accounts: ConfigLpAccounts {
+                marinade: self.key(),
+                admin_authority: self.as_ref().admin_authority,
+            },
+            data,
+        };
+        (&builder).into()
+    }
+
+    fn change_authority_instruction(&self, data: ChangeAuthorityData) -> Instruction {
+        let builder = InstructionBuilder {
+            accounts: ChangeAuthorityAccounts {
                 marinade: self.key(),
                 admin_authority: self.as_ref().admin_authority,
             },
