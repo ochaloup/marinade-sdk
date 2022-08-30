@@ -5,7 +5,6 @@ pub mod instructions;
 pub mod located;
 pub mod state;
 
-use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
 
 /// The static program ID

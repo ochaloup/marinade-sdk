@@ -1,5 +1,3 @@
-use std::{error::Error, marker::PhantomData};
-
 use borsh::{BorshDeserialize, BorshSerialize};
 use derive_more::{Display, Error};
 use solana_program::{
