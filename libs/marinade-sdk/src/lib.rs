@@ -7,6 +7,9 @@ pub mod state;
 
 use solana_program::pubkey::Pubkey;
 
+#[macro_use]
+extern crate marinade_sdk_macro;
+
 /// The static program ID
 pub static ID: Pubkey = Pubkey::new_from_array([
     5, 69, 227, 101, 190, 242, 113, 173, 117, 53, 3, 103, 86, 93, 164, 13, 163, 54, 220, 28, 135,
