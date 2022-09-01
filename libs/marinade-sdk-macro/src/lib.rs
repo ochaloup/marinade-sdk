@@ -227,6 +227,14 @@ pub fn derive_instruction_accounts(input: TokenStream) -> TokenStream {
                 .as_ref()
                 .expect("Structs must contain named fields")
                 .clone();
+            // when pubkey we want to work with AccountMeta conversion, otherwise leaving it
+            let is_pubkey = match &field.ty {
+                syn::Type::Path(_ty) => field.ty.to_token_stream().to_string().ends_with("Pubkey"),
+                _ => false,
+            };
+            if ! is_pubkey {
+                panic!("Macro MarinadeInstructionAccounts is capable to work only with struct with fields of type Pubkey");
+            }
 
             let mut field_data = AccountsFieldData::new(
                 field_ident.to_token_stream().to_string(),
