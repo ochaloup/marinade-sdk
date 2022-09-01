@@ -76,15 +76,19 @@ const AM_MUT_SIGNER: &str = "solana_program::instruction::AccountMeta::new({}, t
 
 struct AccountsFieldData {
     name: String,
+    is_pubkey: bool,
+    field_type_name: proc_macro2::TokenStream,
     account_meta_formatter: String,
     signer: bool,
     mutate: bool,
 }
 
 impl AccountsFieldData {
-    fn new(name: String, account_meta_formatter: String) -> Self {
+    fn new(name: String, account_meta_formatter: String, is_pubkey: bool, field_type_name: proc_macro2::TokenStream) -> Self {
         AccountsFieldData {
             name,
+            is_pubkey,
+            field_type_name,
             account_meta_formatter,
             signer: false,
             mutate: false,
@@ -227,10 +231,17 @@ pub fn derive_instruction_accounts(input: TokenStream) -> TokenStream {
                 .as_ref()
                 .expect("Structs must contain named fields")
                 .clone();
+            // when pubkey we want to work with AccountMeta conversion, otherwise leaving it
+            let is_pubkey = match &field.ty {
+                syn::Type::Path(ty) => field.ty.to_token_stream().to_string().ends_with("Pubkey"),
+                _ => false,
+            };
 
             let mut field_data = AccountsFieldData::new(
                 field_ident.to_token_stream().to_string(),
                 AM_READ_ONLY.to_string(),
+                is_pubkey,
+                field.ty.to_token_stream(),
             );
             field
                 .attrs
