@@ -24,6 +24,10 @@ impl AddLiquidityData {
     }
 }
 
+pub struct TestNested {
+    pub some_key: Pubkey,
+}
+
 pub struct AddLiquidityAccounts {
     pub marinade: Pubkey,  // state
     pub lp_mint: Pubkey,
@@ -34,6 +38,7 @@ pub struct AddLiquidityAccounts {
     pub mint_to: Pubkey,
     pub system_program: Pubkey,
     pub token_program: Pubkey,
+    pub test_nested: TestNested,
 }
 
 impl Owner for AddLiquidityAccounts {
@@ -54,6 +59,7 @@ impl ToAccountMetas for AddLiquidityAccounts {
             AccountMeta::new(self.mint_to, false),
             AccountMeta::new_readonly(self.system_program, false),
             AccountMeta::new_readonly(self.token_program, false),
+            AccountMeta::new_readonly(self.test_nested.some_key, false),
         ]
     }
 
@@ -70,6 +76,7 @@ pub struct AddLiquidityAccountInfos<'info> {
     pub mint_to: AccountInfo<'info>,
     pub system_program: AccountInfo<'info>,
     pub token_program: AccountInfo<'info>,
+    pub test_nested_some_key: AccountInfo<'info>,
 }
 
 impl<'info> Owner for AddLiquidityAccountInfos<'info> {
@@ -90,6 +97,7 @@ impl<'info> From<&AddLiquidityAccountInfos<'info>> for AddLiquidityAccounts {
             mint_to,
             system_program,
             token_program,
+            test_nested_some_key,
         }: &AddLiquidityAccountInfos<'info>,
     ) -> Self {
         Self {
@@ -102,6 +110,7 @@ impl<'info> From<&AddLiquidityAccountInfos<'info>> for AddLiquidityAccounts {
             mint_to: mint_to.key.clone(),
             system_program: system_program.key.clone(),
             token_program: token_program.key.clone(),
+            test_nested: test_nested_some_key,
         }
     }
 }
@@ -109,15 +118,16 @@ impl<'info> From<&AddLiquidityAccountInfos<'info>> for AddLiquidityAccounts {
 impl<'info> ToAccountMetas for AddLiquidityAccountInfos<'info> {
     fn to_account_metas(&self) -> Vec<AccountMeta> {
         vec![
-            AccountMeta::new(marinade.key.clone(), false),
-            AccountMeta::new(lp_mint.key.clone(), false),
-            AccountMeta::new_readonly(lp_mint_authority.key.clone(), false),
-            AccountMeta::new_readonly(liq_pool_msol_leg.key.clone(), false),
-            AccountMeta::new(liq_pool_sol_leg_pda.key.clone(), false),
-            AccountMeta::new(transfer_from.key.clone(), true),
-            AccountMeta::new(mint_to.key.clone(), false),
-            AccountMeta::new_readonly(system_program.key.clone(), false),
-            AccountMeta::new_readonly(token_program.key.clone(), false),
+            AccountMeta::new(self.marinade.key.clone(), false),
+            AccountMeta::new(self.lp_mint.key.clone(), false),
+            AccountMeta::new_readonly(self.lp_mint_authority.key.clone(), false),
+            AccountMeta::new_readonly(self.liq_pool_msol_leg.key.clone(), false),
+            AccountMeta::new(self.liq_pool_sol_leg_pda.key.clone(), false),
+            AccountMeta::new(self.transfer_from.key.clone(), true),
+            AccountMeta::new(self.mint_to.key.clone(), false),
+            AccountMeta::new_readonly(self.system_program.key.clone(), false),
+            AccountMeta::new_readonly(self.token_program.key.clone(), false),
+            AccountMeta::new_readonly(self.test_nested_some_key.key.clone(), false),
         ]
     }
     type Data = AddLiquidityData;
@@ -126,15 +136,16 @@ impl<'info> ToAccountMetas for AddLiquidityAccountInfos<'info> {
 impl<'info> ToAccountInfos<'info> for AddLiquidityAccountInfos<'info> {
     fn to_account_infos(&self) -> Vec<AccountInfo<'info>> {
         vec![
-            marinade.key.clone(),
-            lp_mint.key.clone(),
-            lp_mint_authority.key.clone(),
-            liq_pool_msol_leg.key.clone(),
-            liq_pool_sol_leg_pda.key.clone(),
-            transfer_from.key.clone(),
-            mint_to.key.clone(),
-            system_program.key.clone(),
-            token_program.key.clone(),
+            self.marinade.key.clone(),
+            self.lp_mint.key.clone(),
+            self.lp_mint_authority.key.clone(),
+            self.liq_pool_msol_leg.key.clone(),
+            self.liq_pool_sol_leg_pda.key.clone(),
+            self.transfer_from.key.clone(),
+            self.mint_to.key.clone(),
+            self.system_program.key.clone(),
+            self.token_program.key.clone(),
+            self.test_nested_some_key.clone(),
         ]
     }
 }
