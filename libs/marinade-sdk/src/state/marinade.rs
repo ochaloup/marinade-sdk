@@ -1,9 +1,19 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, instruction::Instruction, msg,
-    program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    instruction::Instruction,
+    msg,
+    program_error::ProgramError,
+    program_pack::Pack,
+    pubkey::Pubkey,
+    stake, system_program,
+    sysvar::{clock, rent},
 };
 
+use crate::instructions::deposit_stake_account::{
+    DepositStakeAccountAccounts, DepositStakeAccountData,
+};
 use crate::{
     calc::{shares_from_value, value_from_shares},
     checks::check_address,
@@ -12,7 +22,10 @@ use crate::{
     instructions::config_lp::{ConfigLpAccounts, ConfigLpData},
     located::Located,
     state::{
-        fee::Fee, liq_pool::LiqPool, stake_system::StakeSystem, validator_system::ValidatorSystem,
+        fee::Fee,
+        liq_pool::LiqPool,
+        stake_system::StakeSystem,
+        validator_system::{ValidatorRecord, ValidatorSystem},
     },
     ID,
 };
@@ -296,6 +309,15 @@ pub trait MarinadeHelpers {
     // Instructions
     fn config_lp_instruction(&self, data: ConfigLpData) -> Instruction;
     fn change_authority_instruction(&self, data: ChangeAuthorityData) -> Instruction;
+    fn deposit_stake_accounts(
+        &self,
+        data: DepositStakeAccountData,
+        stake_account: Pubkey,
+        stake_authority: Pubkey,
+        mint_to: Pubkey,
+        validator_vote: Pubkey,
+        rent_payer: Pubkey,
+    ) -> Instruction;
 }
 
 impl<T> MarinadeHelpers for T
@@ -357,6 +379,42 @@ where
             accounts: ChangeAuthorityAccounts {
                 marinade: self.key(),
                 admin_authority: self.as_ref().admin_authority,
+            },
+            data,
+        };
+        (&builder).into()
+    }
+
+    fn deposit_stake_accounts(
+        &self,
+        data: DepositStakeAccountData,
+        stake_account: Pubkey,
+        stake_authority: Pubkey,
+        mint_to: Pubkey,
+        validator_vote: Pubkey,
+        rent_payer: Pubkey,
+    ) -> Instruction {
+        let builder = InstructionBuilder {
+            accounts: DepositStakeAccountAccounts {
+                marinade: self.key(),
+                validator_list: *self.as_ref().validator_system.validator_list_address(),
+                stake_list: *self.as_ref().stake_system.stake_list_address(),
+                stake_account,
+                stake_authority,
+                duplication_flag: ValidatorRecord::find_duplication_flag(
+                    &self.key(),
+                    &validator_vote,
+                )
+                .0,
+                rent_payer,
+                msol_mint: self.as_ref().msol_mint,
+                mint_to,
+                msol_mint_authority: self.msol_mint_authority(),
+                clock: clock::id(),
+                rent: rent::id(),
+                system_program: system_program::ID,
+                token_program: spl_token::ID,
+                stake_program: stake::program::ID,
             },
             data,
         };
