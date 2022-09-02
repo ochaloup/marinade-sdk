@@ -317,18 +317,8 @@ pub fn derive_instruction_accounts(input: TokenStream) -> TokenStream {
         .collect::<Vec<_>>();
 
     let output = quote! {
-        impl micro_anchor::Owner for #struct_name {
-            fn owner() -> solana_program::pubkey::Pubkey {
-                #owner_id
-            }
-        }
         pub struct #infos_struct_name<'info> {
             #(#fields_declaration),*
-        }
-        impl<'info> micro_anchor::Owner for #infos_struct_name<'info> {
-            fn owner() -> solana_program::pubkey::Pubkey {
-                #owner_id
-            }
         }
         impl<'info> From<&#infos_struct_name<'info>> for #struct_name {
             fn from(
@@ -363,6 +353,16 @@ pub fn derive_instruction_accounts(input: TokenStream) -> TokenStream {
                 ]
             }
             type Data = #data_struct_name;
+        }
+        impl micro_anchor::Owner for #struct_name {
+            fn owner() -> solana_program::pubkey::Pubkey {
+                #owner_id
+            }
+        }
+        impl<'info> micro_anchor::Owner for #infos_struct_name<'info> {
+            fn owner() -> solana_program::pubkey::Pubkey {
+                #owner_id
+            }
         }
     };
 
