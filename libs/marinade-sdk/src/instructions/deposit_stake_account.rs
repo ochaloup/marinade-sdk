@@ -20,7 +20,7 @@ pub struct DepositStakeAccountData {
 #[ownerid(crate::ID)]
 pub struct DepositStakeAccountAccounts {
     #[account(mut)]
-    pub state: Pubkey,
+    pub marinade: Pubkey,  // state
     #[account(mut)]
     pub validator_list: Pubkey,
     #[account(mut)]

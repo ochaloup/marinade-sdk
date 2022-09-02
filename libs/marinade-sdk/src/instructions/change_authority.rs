@@ -23,7 +23,7 @@ pub struct ChangeAuthorityData {
 #[ownerid(crate::ID)]
 pub struct ChangeAuthorityAccounts {
     #[account(mut)]
-    pub marinade: Pubkey,
+    pub marinade: Pubkey,  // state
     #[account(signer)]
     pub admin_authority: Pubkey,
 }

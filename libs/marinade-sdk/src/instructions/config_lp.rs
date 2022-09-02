@@ -24,7 +24,7 @@ pub struct ConfigLpData {
 #[ownerid(crate::ID)]
 pub struct ConfigLpAccounts {
     #[account(mut)]
-    pub marinade: Pubkey,
+    pub marinade: Pubkey,  // state
     #[account(signer)]
     pub admin_authority: Pubkey,
 }
