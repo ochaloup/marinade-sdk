@@ -1,6 +1,8 @@
 use proc_macro::TokenStream;
+use proc_macro2::Ident;
 use quote::{quote, ToTokens};
-use syn::{parse_macro_input, punctuated::Punctuated, DeriveInput, Token, Path};
+use syn::__private::TokenStream2;
+use syn::{parse_macro_input, punctuated::Punctuated, DeriveInput, Path, Token};
 use syn_unnamed_struct::Meta;
 
 /// Example of macro generation that generates
@@ -76,20 +78,93 @@ const AM_MUT_SIGNER: &str = "solana_program::instruction::AccountMeta::new({}, t
 
 struct AccountsFieldData {
     name: String,
+    type_name: TokenStream2,
+    type_is_pubkey: bool,
     account_meta_formatter: String,
     signer: bool,
     mutate: bool,
 }
 
 impl AccountsFieldData {
-    fn new(name: String, account_meta_formatter: String) -> Self {
+    fn new(
+        name: String,
+        account_meta_formatter: String,
+        type_name: TokenStream2,
+        type_is_pubkey: bool,
+    ) -> Self {
         AccountsFieldData {
             name,
+            type_name,
+            type_is_pubkey,
             account_meta_formatter,
             signer: false,
             mutate: false,
         }
     }
+}
+
+fn get_related_struct_idents(
+    struct_name_as_string: String,
+) -> (proc_macro2::Ident, proc_macro2::Ident) {
+    let struct_name_stripped = struct_name_as_string.strip_suffix("Accounts");
+    if struct_name_stripped.is_none() {
+        panic!(
+            "Struct {} annotated with MarinadeInstructionAccounts is expected to have a name ending with 'Accounts'",
+            struct_name_as_string
+        );
+    }
+    let struct_name_stripped = struct_name_stripped.unwrap();
+    let infos_struct_name = proc_macro2::Ident::new(
+        format!("{}AccountInfos", struct_name_stripped).as_str(),
+        proc_macro2::Span::call_site(),
+    );
+    let data_struct_name = proc_macro2::Ident::new(
+        format!("{}Data", struct_name_stripped).as_str(),
+        proc_macro2::Span::call_site(),
+    );
+    (data_struct_name, infos_struct_name)
+}
+
+fn emit_struct_fields_non_pubkey(
+    struct_fields: &Vec<(Ident, AccountsFieldData)>,
+    base_pattern: &str,
+    f: fn(&AccountsFieldData) -> String,
+) -> Vec<TokenStream2> {
+    struct_fields
+        .iter()
+        .filter_map(|(_, props)| {
+            let adjusted_pattern = base_pattern.replace("{}", f(props).as_str());
+            let parsed_pattern: proc_macro2::TokenStream = adjusted_pattern.parse().unwrap();
+            if !props.type_is_pubkey {
+                Some(quote!(#parsed_pattern))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+}
+
+fn emit_struct_fields_at_pattern(
+    struct_fields: &Vec<(Ident, AccountsFieldData)>,
+    base_pattern: &str,
+    f: fn(&AccountsFieldData) -> &str,
+) -> Vec<TokenStream2> {
+    struct_fields
+        .iter()
+        .filter_map(|(_, props)| {
+            let self_name = base_pattern.replace("{}", f(props));
+            let account_meta_def: proc_macro2::TokenStream = props
+                .account_meta_formatter
+                .replace("{}", self_name.as_str())
+                .parse()
+                .unwrap();
+            if props.type_is_pubkey {
+                Some(quote!(#account_meta_def))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
 }
 
 /// Example of macro generation that will generate a new struct `TestAccountInfos`
@@ -137,11 +212,6 @@ impl AccountsFieldData {
 /// pub struct TestAccountInfos<'info> {
 ///     pub marinade: solana_program::account_info::AccountInfo<'info>,
 /// }
-/// impl<'info> micro_anchor::Owner for TestAccountInfos<'info> {
-///     fn owner() -> solana_program::pubkey::Pubkey {
-///         solana_program::bpf_loader::ID
-///     }
-/// }
 /// impl<'info> From<&TestAccountInfos<'info>> for TestAccounts {
 ///     fn from(
 ///         TestAccountInfos {
@@ -172,15 +242,17 @@ impl AccountsFieldData {
 ///     }
 ///     type Data = TestData;
 /// }
+/// impl<'info> micro_anchor::Owner for TestAccountInfos<'info> {
+///     fn owner() -> solana_program::pubkey::Pubkey {
+///         solana_program::bpf_loader::ID
+///     }
+/// }
 /// ```
 #[proc_macro_derive(MarinadeInstructionAccounts, attributes(account, ownerid))]
 pub fn derive_instruction_accounts(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
     let DeriveInput {
-        ident,
-        attrs,
-        data,
-        ..
+        ident, attrs, data, ..
     } = &input;
 
     let struct_name = ident.clone();
@@ -190,7 +262,8 @@ pub fn derive_instruction_accounts(input: TokenStream) -> TokenStream {
         .iter()
         .filter(|a| a.path.is_ident("ownerid"))
         .flat_map(|attr| {
-            attr.parse_args_with(Punctuated::<Path, Token![,]>::parse_terminated).expect("Could not parse 'ownerid' attribute")
+            attr.parse_args_with(Punctuated::<Path, Token![,]>::parse_terminated)
+                .expect("Could not parse 'ownerid' attribute")
         })
         .collect::<Vec<_>>();
     if owner_ids.len() != 1 {
@@ -198,22 +271,8 @@ pub fn derive_instruction_accounts(input: TokenStream) -> TokenStream {
     }
     let owner_id = owner_ids.get(0).unwrap();
 
-    let struct_name_as_string = struct_name.to_string();
-    let infos_struct_name_as_string = struct_name_as_string.strip_suffix("Accounts");
-    if infos_struct_name_as_string.is_none() {
-        panic!(
-            "Struct {} annotated with MarinadeInstructionAccounts is expected to have a name ending with 'Accounts'",
-            struct_name
-        );
-    }
-    let infos_struct_name = proc_macro2::Ident::new(
-        format!("{}AccountInfos", infos_struct_name_as_string.unwrap()).as_str(),
-        proc_macro2::Span::call_site(),
-    );
-    let data_struct_name = proc_macro2::Ident::new(
-        format!("{}Data", infos_struct_name_as_string.unwrap()).as_str(),
-        proc_macro2::Span::call_site(),
-    );
+    let (data_struct_name, infos_struct_name) = get_related_struct_idents(struct_name.to_string());
+
     let obj = match data {
         syn::Data::Struct(obj) => obj,
         _ => panic!("Only structs supported in MarinadeInstructionAccounts macro"),
@@ -228,17 +287,16 @@ pub fn derive_instruction_accounts(input: TokenStream) -> TokenStream {
                 .expect("Structs must contain named fields")
                 .clone();
             // when pubkey we want to work with AccountMeta conversion, otherwise leaving it
-            let is_pubkey = match &field.ty {
+            let type_is_pubkey = match &field.ty {
                 syn::Type::Path(_ty) => field.ty.to_token_stream().to_string().ends_with("Pubkey"),
                 _ => false,
             };
-            if ! is_pubkey {
-                panic!("Macro MarinadeInstructionAccounts is capable to work only with struct with fields of type Pubkey");
-            }
 
             let mut field_data = AccountsFieldData::new(
                 field_ident.to_token_stream().to_string(),
                 AM_READ_ONLY.to_string(),
+                field.ty.to_token_stream(),
+                type_is_pubkey,
             );
             field
                 .attrs
@@ -277,80 +335,117 @@ pub fn derive_instruction_accounts(input: TokenStream) -> TokenStream {
     // preparation of identifiers and data to be quoted later
     let fields_declaration = struct_fields
         .iter()
-        .map(|(field, _)| quote!(pub #field: solana_program::account_info::AccountInfo<'info>))
+        .map(|(field, props)| {
+            if props.type_is_pubkey {
+                quote!(pub #field: solana_program::account_info::AccountInfo<'info>)
+            } else {
+                let (_, type_ai_name) = get_related_struct_idents(props.type_name.to_string());
+                quote!(pub #field: #type_ai_name<'info>)
+            }
+        })
         .collect::<Vec<_>>();
-    let fields_name = struct_fields
+    let fields_names = struct_fields
         .iter()
         .map(|(field, _)| quote!(#field))
         .collect::<Vec<_>>();
-    let fields_declaration_cloning = struct_fields
+    let from_infos_fields_declaration_cloning = struct_fields
         .iter()
-        .map(|(field, _)| quote!(#field: #field.key.clone()))
-        .collect::<Vec<_>>();
-    let fields_cloning = struct_fields
-        .iter()
-        .map(|(field, _)| quote!(self.#field.clone()))
-        .collect::<Vec<_>>();
-    let fields_meta = struct_fields
-        .iter()
-        .map(|(_, f_data)| {
-            let self_name = format!("self.{}", f_data.name);
-            let account_meta_def: proc_macro2::TokenStream = f_data
-                .account_meta_formatter
-                .replace("{}", self_name.as_str())
-                .parse()
-                .unwrap();
-            quote!(#account_meta_def)
+        .map(|(field, props)| {
+            if props.type_is_pubkey {
+                quote!(#field: #field.key.clone())
+            } else {
+                quote!(#field: #field.into())
+            }
         })
         .collect::<Vec<_>>();
-    let fields_meta_cloning = struct_fields
+    let to_infos_fields_cloning_inner = struct_fields
         .iter()
-        .map(|(_, f_data)| {
-            let self_cloning = format!("self.{}.key.clone()", f_data.name);
-            let account_meta_def: proc_macro2::TokenStream = f_data
-                .account_meta_formatter
-                .replace("{}", self_cloning.as_str())
-                .parse()
-                .unwrap();
-            quote!(#account_meta_def)
+        .filter_map(|(field, props)| {
+            if props.type_is_pubkey {
+                Some(quote!(self.#field.clone()))
+            } else {
+                None
+            }
         })
         .collect::<Vec<_>>();
+    let to_account_metas_inner_fields = emit_struct_fields_at_pattern(
+        &struct_fields,
+        "self.{}",
+        |props: &AccountsFieldData| -> &str { props.name.as_str() },
+    );
+    let to_account_metas_inner_cloning = emit_struct_fields_at_pattern(
+        &struct_fields,
+        "self.{}.key.clone()",
+        |props: &AccountsFieldData| -> &str { props.name.as_str() },
+    );
+    let to_account_metas_nested_iter_fields = emit_struct_fields_non_pubkey(
+        &struct_fields,
+        "self.{}.to_account_metas().into_iter().for_each(|i| output.push(i));",
+        |props: &AccountsFieldData| -> String { props.name.clone() },
+    );
+    let to_account_infos_nested_iter_fields = emit_struct_fields_non_pubkey(
+        &struct_fields,
+        "self.{}.to_account_infos().into_iter().for_each(|i| output.push(i));",
+        |props: &AccountsFieldData| -> String { props.name.clone() },
+    );
 
-    let output = quote! {
+    let token_stream_output = quote! {
         pub struct #infos_struct_name<'info> {
             #(#fields_declaration),*
         }
         impl<'info> From<&#infos_struct_name<'info>> for #struct_name {
             fn from(
                 #infos_struct_name {
-                    #(#fields_name),*
+                    #(#fields_names),*
                 }: &#infos_struct_name<'info>,
             ) -> Self {
                 Self {
-                    #(#fields_declaration_cloning),*
+                    #(#from_infos_fields_declaration_cloning),*
                 }
             }
         }
-        impl<'info> micro_anchor::ToAccountInfos<'info> for #infos_struct_name<'info> {
-            fn to_account_infos(&self) -> Vec<solana_program::account_info::AccountInfo<'info>> {
+        impl #struct_name {
+            fn to_account_metas_inner(&self) -> Vec<solana_program::instruction::AccountMeta> {
                 vec![
-                    #(#fields_cloning),*
+                    #(#to_account_metas_inner_fields),*
                 ]
             }
         }
         impl micro_anchor::ToAccountMetas for #struct_name {
             fn to_account_metas(&self) -> Vec<solana_program::instruction::AccountMeta> {
-                vec![
-                    #(#fields_meta),*
-                ]
+                let mut output: Vec<solana_program::instruction::AccountMeta> = Vec::new();
+                self.to_account_metas_inner().into_iter().for_each(|i| output.push(i));
+                #(#to_account_metas_nested_iter_fields);*
+                output
             }
             type Data = #data_struct_name;
         }
+        impl<'info> #infos_struct_name<'info> {
+             fn to_account_infos_inner(&self) -> Vec<solana_program::account_info::AccountInfo<'info>> {
+                vec![
+                    #(#to_infos_fields_cloning_inner),*
+                ]
+            }
+            fn to_account_metas_inner(&self) -> Vec<solana_program::instruction::AccountMeta> {
+                vec![
+                    #(#to_account_metas_inner_cloning),*
+                ]
+            }
+        }
+        impl<'info> micro_anchor::ToAccountInfos<'info> for #infos_struct_name<'info> {
+            fn to_account_infos(&self) -> Vec<solana_program::account_info::AccountInfo<'info>> {
+                let mut output: Vec<solana_program::account_info::AccountInfo<'info>> = Vec::new();
+                self.to_account_infos_inner().into_iter().for_each(|i| output.push(i));
+                #(#to_account_infos_nested_iter_fields);*
+                output
+            }
+        }
         impl<'info> micro_anchor::ToAccountMetas for #infos_struct_name<'info> {
             fn to_account_metas(&self) -> Vec<solana_program::instruction::AccountMeta> {
-                vec![
-                    #(#fields_meta_cloning),*
-                ]
+                let mut output: Vec<solana_program::instruction::AccountMeta> = Vec::new();
+                self.to_account_metas_inner().into_iter().for_each(|i| output.push(i));
+                #(#to_account_metas_nested_iter_fields);*
+                output
             }
             type Data = #data_struct_name;
         }
@@ -366,5 +461,5 @@ pub fn derive_instruction_accounts(input: TokenStream) -> TokenStream {
         }
     };
 
-    TokenStream::from(output)
+    TokenStream::from(token_stream_output)
 }
