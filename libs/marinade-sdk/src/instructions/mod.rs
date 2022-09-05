@@ -13,3 +13,4 @@ pub mod merge_stakes;
 pub mod order_unstake;
 pub mod partial_unstake;
 pub mod remove_liquidity;
+pub mod stake_reserve;
