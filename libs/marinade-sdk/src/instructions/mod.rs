@@ -1,4 +1,5 @@
 pub mod add_liquidity;
+pub mod add_validator;
 pub mod change_authority;
 pub mod claim;
 pub mod config_lp;
