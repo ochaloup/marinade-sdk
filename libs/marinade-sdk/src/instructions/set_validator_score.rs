@@ -11,7 +11,7 @@ use solana_program::pubkey::Pubkey;
     BorshSerialize,
     BorshDeserialize,
 )]
-#[discriminator()]
+#[discriminator([101, 41, 206, 33, 216, 111, 25, 78])]
 pub struct SetValidatorScoreData {
     pub index: u32,
     pub validator_vote: Pubkey,
