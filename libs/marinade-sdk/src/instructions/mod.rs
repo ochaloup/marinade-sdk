@@ -9,5 +9,6 @@ pub mod deposit_stake_account;
 pub mod emergency_unstake;
 pub mod initialize;
 pub mod liquid_unstake;
+pub mod merge_stakes;
 pub mod order_unstake;
 pub mod remove_liquidity;
