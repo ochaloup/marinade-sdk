@@ -22,7 +22,7 @@ pub struct PartialUnstakeData {
 #[ownerid(crate::ID)]
 pub struct PartialUnstakeAccounts {
     #[account(mut)]
-    pub state: Pubkey,
+    pub marinade: Pubkey, // state
     #[account(signer)]
     pub validator_manager_authority: Pubkey,
     #[account(mut)]

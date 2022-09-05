@@ -18,7 +18,7 @@ pub struct ClaimData {}
 #[ownerid(crate::ID)]
 pub struct ClaimAccounts {
     #[account(mut)]
-    pub state: Pubkey,
+    pub marinade: Pubkey, // state
     #[account(mut)]
     pub reserve_pda: Pubkey,
     #[account(mut)]

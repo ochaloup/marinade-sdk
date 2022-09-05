@@ -22,7 +22,7 @@ pub struct SetValidatorScoreData {
 #[ownerid(crate::ID)]
 pub struct SetValidatorScoreAccounts {
     #[account(mut)]
-    pub state: Pubkey,
+    pub marinade: Pubkey, // state
     #[account(signer)]
     pub manager_authority: Pubkey,
     #[account(mut)]

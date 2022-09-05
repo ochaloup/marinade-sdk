@@ -21,7 +21,7 @@ pub struct EmergencyUnstakeData {
 #[ownerid(crate::ID)]
 pub struct EmergencyUnstakeAccounts {
     #[account(mut)]
-    pub state: Pubkey,
+    pub marinade: Pubkey, // state
     #[account(signer)]
     pub validator_manager_authority: Pubkey,
     #[account(mut)]

@@ -20,7 +20,7 @@ pub struct LiquidUnstakeData {
 #[ownerid(crate::ID)]
 pub struct LiquidUnstakeAccounts {
     #[account(mut)]
-    pub state: Pubkey,
+    pub marinade: Pubkey, // state
     #[account(mut)]
     pub msol_mint: Pubkey,
     #[account(mut)]

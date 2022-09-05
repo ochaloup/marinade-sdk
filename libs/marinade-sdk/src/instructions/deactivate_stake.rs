@@ -21,7 +21,7 @@ pub struct DeactivateStakeData {
 #[ownerid(crate::ID)]
 pub struct DeactivateStakeAccounts {
     #[account(mut)]
-    pub state: Pubkey,
+    pub marinade: Pubkey, // state
     pub reserve_pda: Pubkey,
     #[account(mut)]
     pub validator_list: Pubkey,

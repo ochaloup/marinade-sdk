@@ -22,7 +22,7 @@ pub struct MergeStakesData {
 #[ownerid(crate::ID)]
 pub struct MergeStakesAccounts {
     #[account(mut)]
-    pub state: Pubkey,
+    pub marinade: Pubkey, // state
     #[account(mut)]
     pub stake_list: Pubkey,
     #[account(mut)]

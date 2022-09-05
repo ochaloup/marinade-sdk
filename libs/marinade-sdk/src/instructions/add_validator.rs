@@ -20,7 +20,7 @@ pub struct AddValidatorData {
 #[ownerid(crate::ID)]
 pub struct AddValidatorAccounts {
     #[account(mut)]
-    pub state: Pubkey,
+    pub marinade: Pubkey, // state
     #[account(signer)]
     pub manager_authority: Pubkey,
     #[account(mut)]

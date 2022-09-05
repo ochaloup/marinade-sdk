@@ -20,7 +20,7 @@ pub struct ConfigValidatorSystemData {
 #[ownerid(crate::ID)]
 pub struct ConfigValidatorSystemAccounts {
     #[account(mut)]
-    pub state: Pubkey,
+    pub marinade: Pubkey, // state
     #[account(signer)]
     pub manager_authority: Pubkey,
 }

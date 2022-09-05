@@ -20,7 +20,7 @@ pub struct StakeReserveData {
 #[ownerid(crate::ID)]
 pub struct StakeReserveAccounts {
     #[account(mut)]
-    pub state: Pubkey,
+    pub marinade: Pubkey, // state
     #[account(mut)]
     pub validator_list: Pubkey,
     #[account(mut)]

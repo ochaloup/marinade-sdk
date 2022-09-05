@@ -20,7 +20,7 @@ pub struct RemoveLiquidityData {
 #[ownerid(crate::ID)]
 pub struct RemoveLiquidityAccounts {
     #[account(mut)]
-    pub state: Pubkey,
+    pub marinade: Pubkey, // state
     #[account(mut)]
     pub lp_mint: Pubkey,
     #[account(mut)]
