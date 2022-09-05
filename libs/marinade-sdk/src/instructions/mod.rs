@@ -17,3 +17,4 @@ pub mod partial_unstake;
 pub mod remove_liquidity;
 pub mod remove_validator;
 pub mod stake_reserve;
+pub mod set_validator_score;
