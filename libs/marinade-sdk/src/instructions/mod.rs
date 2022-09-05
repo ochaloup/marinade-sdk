@@ -8,3 +8,4 @@ pub mod deposit_stake_account;
 pub mod initialize;
 pub mod liquid_unstake;
 pub mod remove_liquidity;
+pub mod order_unstake;
