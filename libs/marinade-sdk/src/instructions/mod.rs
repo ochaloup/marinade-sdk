@@ -6,4 +6,5 @@ pub mod config_marinade;
 pub mod deposit;
 pub mod deposit_stake_account;
 pub mod initialize;
+pub mod liquid_unstake;
 pub mod remove_liquidity;
