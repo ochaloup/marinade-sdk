@@ -5,3 +5,4 @@ pub mod config_lp;
 pub mod deposit_stake_account;
 pub mod initialize;
 pub mod remove_liquidity;
+pub mod config_marinade;
