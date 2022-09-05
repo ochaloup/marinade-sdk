@@ -4,6 +4,7 @@ pub mod change_authority;
 pub mod claim;
 pub mod config_lp;
 pub mod config_marinade;
+pub mod config_validator_system;
 pub mod deactivate_stake;
 pub mod deposit;
 pub mod deposit_stake_account;
