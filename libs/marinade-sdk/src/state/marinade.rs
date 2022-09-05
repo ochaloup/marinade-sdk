@@ -11,6 +11,7 @@ use solana_program::{
     sysvar::{clock, rent},
 };
 
+use crate::instructions::deposit::{DepositAccounts, DepositData};
 use crate::instructions::deposit_stake_account::{
     DepositStakeAccountAccounts, DepositStakeAccountData,
 };
@@ -23,7 +24,7 @@ use crate::{
     located::Located,
     state::{
         fee::Fee,
-        liq_pool::LiqPool,
+        liq_pool::{LiqPool, LiqPoolHelpers},
         stake_system::StakeSystem,
         validator_system::{ValidatorRecord, ValidatorSystem},
     },
@@ -318,6 +319,7 @@ pub trait MarinadeHelpers {
         validator_vote: Pubkey,
         rent_payer: Pubkey,
     ) -> Instruction;
+    fn deposit(&self, data: DepositData, transfer_from: Pubkey, mint_to: Pubkey) -> Instruction;
 }
 
 impl<T> MarinadeHelpers for T
@@ -415,6 +417,26 @@ where
                 system_program: system_program::ID,
                 token_program: spl_token::ID,
                 stake_program: stake::program::ID,
+            },
+            data,
+        };
+        (&builder).into()
+    }
+
+    fn deposit(&self, data: DepositData, transfer_from: Pubkey, mint_to: Pubkey) -> Instruction {
+        let builder = InstructionBuilder {
+            accounts: DepositAccounts {
+                marinade: self.key(),
+                msol_mint: self.as_ref().msol_mint,
+                liq_pool_sol_leg_pda: self.liq_pool_sol_leg_address(),
+                liq_pool_msol_leg: self.as_ref().liq_pool.msol_leg,
+                liq_pool_msol_leg_authority: self.liq_pool_msol_leg_authority(),
+                reserve_pda: self.reserve_address(),
+                transfer_from,
+                mint_to,
+                msol_mint_authority: self.msol_mint_authority(),
+                system_program: system_program::ID,
+                token_program: spl_token::ID,
             },
             data,
         };
