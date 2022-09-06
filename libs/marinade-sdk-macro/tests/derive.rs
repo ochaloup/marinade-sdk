@@ -2,12 +2,12 @@
 mod tests {
     use borsh::{BorshDeserialize, BorshSerialize};
     use is_trait::is_trait;
-    use marinade_sdk_macro::{MarinadeInstructionAccounts, MarinadeInstructionData};
+    use marinade_sdk_macro::{InstructionAccounts, InstructionData};
     use solana_program::pubkey::Pubkey;
 
     #[test]
     fn test_instruction_data() {
-        #[derive(MarinadeInstructionData, BorshSerialize, BorshDeserialize)]
+        #[derive(InstructionData, BorshSerialize, BorshDeserialize)]
         #[discriminator([1,2,3,4,5,6,7,8])]
         struct SimpleTestData {
             lamports: u64,
@@ -20,21 +20,21 @@ mod tests {
     #[test]
     fn test_account_infos<'info>() {
         // SimpleTestData struct is required ->
-        //   as the macro MarinadeInstructionAccounts depends on existence of it
+        //   as the macro InstructionAccounts depends on existence of it
         #[derive(BorshSerialize, BorshDeserialize)]
-        pub struct SimpleTestData {
+        pub struct SimpleMyTestData {
             lamports: u64,
         }
-        impl micro_anchor::InstructionData for SimpleTestData {}
-        impl micro_anchor::Discriminator for SimpleTestData {
+        impl micro_anchor::InstructionData for SimpleMyTestData {}
+        impl micro_anchor::Discriminator for SimpleMyTestData {
             const DISCRIMINATOR: [u8; 8] = ([1, 2, 3, 4, 5, 6, 7, 8]);
         }
 
         // for being able to work with micro anchor to_account_metas()
         use micro_anchor::ToAccountMetas;
 
-        #[derive(MarinadeInstructionAccounts)]
-        #[ownerid(solana_program::bpf_loader::ID)]
+        #[derive(InstructionAccounts)]
+        #[accounts(ownerid=solana_program::bpf_loader::ID,data=SimpleMyTestData)]
         pub struct SimpleTestAccounts {
             #[account(mut)]
             pub writable_no_signer: Pubkey,
@@ -87,13 +87,13 @@ mod tests {
 
     #[test]
     fn test_account_infos_nested<'info>() {
-        // requred by MarinadeInstructionAccounts
-        #[derive(MarinadeInstructionData, BorshSerialize, BorshDeserialize)]
+        // requred by InstructionAccounts
+        #[derive(InstructionData, BorshSerialize, BorshDeserialize)]
         #[discriminator([1,2,3,4,5,6,7,8])]
         pub struct NestedTestData {
             nested_lamports: u64,
         }
-        #[derive(MarinadeInstructionData, BorshSerialize, BorshDeserialize)]
+        #[derive(InstructionData, BorshSerialize, BorshDeserialize)]
         #[discriminator([1,2,3,4,5,6,7,8])]
         pub struct OuterTestData {
             outer_lamports: u64,
@@ -102,14 +102,14 @@ mod tests {
         // for being able to work with micro anchor to_account_metas()
         use micro_anchor::ToAccountMetas;
 
-        #[derive(MarinadeInstructionAccounts)]
-        #[ownerid(solana_program::bpf_loader::ID)]
+        #[derive(InstructionAccounts)]
+        #[accounts(ownerid=solana_program::bpf_loader::ID,data=NestedTestData)]
         pub struct NestedTestAccounts {
             pub nested_pk: Pubkey,
         }
 
-        #[derive(MarinadeInstructionAccounts)]
-        #[ownerid(solana_program::bpf_loader::ID)]
+        #[derive(InstructionAccounts)]
+        #[accounts(ownerid=solana_program::bpf_loader::ID,data=OuterTestData)]
         pub struct OuterTestAccounts {
             pub outer_pk: Pubkey,
             pub nested_struct: NestedTestAccounts,
