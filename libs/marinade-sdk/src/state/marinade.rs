@@ -12,16 +12,17 @@ use solana_program::{
 };
 
 use crate::instructions::add_liquidity::{AddLiquidityAccounts, AddLiquidityData};
+use crate::instructions::change_authority::{ChangeAuthorityAccounts, ChangeAuthorityData};
+use crate::instructions::config_lp::{ConfigLpAccounts, ConfigLpData};
 use crate::instructions::deposit::{DepositAccounts, DepositData};
 use crate::instructions::deposit_stake_account::{
     DepositStakeAccountAccounts, DepositStakeAccountData,
 };
+use crate::instructions::remove_liquidity::{RemoveLiquidityAccounts, RemoveLiquidityData};
 use crate::{
     calc::{shares_from_value, value_from_shares},
     checks::check_address,
     error::CommonError,
-    instructions::change_authority::{ChangeAuthorityAccounts, ChangeAuthorityData},
-    instructions::config_lp::{ConfigLpAccounts, ConfigLpData},
     located::Located,
     state::{
         fee::Fee,
@@ -327,6 +328,14 @@ pub trait MarinadeHelpers {
         transfer_from: Pubkey,
         mint_to: Pubkey,
     ) -> Instruction;
+    fn remove_liquidity(
+        &self,
+        data: RemoveLiquidityData,
+        burn_from: Pubkey,
+        burn_from_authority: Pubkey,
+        transfer_sol_to: Pubkey,
+        transfer_msol_to: Pubkey,
+    ) -> Instruction;
 }
 
 impl<T> MarinadeHelpers for T
@@ -465,6 +474,33 @@ where
                 liq_pool_msol_leg: self.as_ref().liq_pool.msol_leg,
                 transfer_from,
                 mint_to,
+                system_program: system_program::ID,
+                token_program: spl_token::ID,
+            },
+            data,
+        };
+        (&builder).into()
+    }
+
+    fn remove_liquidity(
+        &self,
+        data: RemoveLiquidityData,
+        burn_from: Pubkey,
+        burn_from_authority: Pubkey,
+        transfer_sol_to: Pubkey,
+        transfer_msol_to: Pubkey,
+    ) -> Instruction {
+        let builder = InstructionBuilder {
+            accounts: RemoveLiquidityAccounts {
+                marinade: self.key(),
+                lp_mint: self.as_ref().liq_pool.lp_mint,
+                burn_from,
+                burn_from_authority,
+                transfer_sol_to,
+                transfer_msol_to,
+                liq_pool_sol_leg_pda: self.liq_pool_sol_leg_address(),
+                liq_pool_msol_leg: self.as_ref().liq_pool.msol_leg,
+                liq_pool_msol_leg_authority: self.liq_pool_msol_leg_authority(),
                 system_program: system_program::ID,
                 token_program: spl_token::ID,
             },

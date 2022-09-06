@@ -17,8 +17,8 @@ pub struct AddLiquidityAccounts {
     #[account(mut)]
     pub lp_mint: Pubkey,
     pub lp_mint_authority: Pubkey,
-    #[account(mut)]
     pub liq_pool_msol_leg: Pubkey,
+    #[account(mut)]
     pub liq_pool_sol_leg_pda: Pubkey,
     #[account(mut, signer)]
     pub transfer_from: Pubkey,
