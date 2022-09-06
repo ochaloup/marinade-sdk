@@ -35,6 +35,7 @@ use crate::{
 };
 use micro_anchor::{AccountDeserialize, Discriminator, InstructionBuilder, Owner};
 use std::mem::MaybeUninit;
+use crate::instructions::liquid_unstake::{LiquidUnstakeAccounts, LiquidUnstakeData};
 
 #[derive(Debug, BorshSerialize, BorshDeserialize, Clone)]
 pub struct Marinade {
@@ -338,6 +339,13 @@ pub trait MarinadeHelpers {
         transfer_msol_to: Pubkey,
     ) -> Instruction;
     fn claim(&self, ticket_account: Pubkey, transfer_sol_to: Pubkey) -> Instruction;
+    fn liquid_unstake(
+        &self,
+        data: LiquidUnstakeData,
+        get_msol_from: Pubkey,
+        get_msol_from_authority: Pubkey,
+        transfer_sol_to: Pubkey
+    ) -> Instruction;
 }
 
 impl<T> MarinadeHelpers for T
@@ -521,6 +529,31 @@ where
                 transfer_sol_to,
                 system_program: system_program::ID,
                 clock: clock::ID,
+            },
+            data,
+        };
+        (&builder).into()
+    }
+
+    fn liquid_unstake(
+        &self,
+        data: LiquidUnstakeData,
+        get_msol_from: Pubkey,
+        get_msol_from_authority: Pubkey,
+        transfer_sol_to: Pubkey
+    ) -> Instruction {
+        let builder = InstructionBuilder {
+            accounts: LiquidUnstakeAccounts {
+                marinade: self.key(),
+                msol_mint: self.as_ref().msol_mint,
+                liq_pool_sol_leg_pda: self.liq_pool_sol_leg_address(),
+                liq_pool_msol_leg: self.as_ref().liq_pool.msol_leg,
+                get_msol_from,
+                get_msol_from_authority,
+                transfer_sol_to,
+                treasury_msol_account: self.as_ref().treasury_msol_account,
+                system_program: system_program::ID,
+                token_program: spl_token::ID,
             },
             data,
         };
