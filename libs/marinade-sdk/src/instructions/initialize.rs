@@ -3,14 +3,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
 
 #[derive(
-    MarinadeInstructionData,
-    Clone,
-    Copy,
-    Debug,
-    Default,
-    PartialEq,
-    BorshSerialize,
-    BorshDeserialize,
+    InstructionData, Clone, Copy, Debug, Default, PartialEq, BorshSerialize, BorshDeserialize,
 )]
 #[discriminator([175, 175, 109, 31, 13, 152, 155, 237])]
 pub struct InitializeData {
@@ -25,14 +18,7 @@ pub struct InitializeData {
 }
 
 #[derive(
-    MarinadeInstructionData,
-    Clone,
-    Copy,
-    Debug,
-    Default,
-    PartialEq,
-    BorshSerialize,
-    BorshDeserialize,
+    InstructionData, Clone, Copy, Debug, Default, PartialEq, BorshSerialize, BorshDeserialize,
 )]
 #[discriminator([1,2,3,4,5,6,7,8])] // fake discriminator
 pub struct LiqPoolInitializeData {
@@ -42,8 +28,8 @@ pub struct LiqPoolInitializeData {
     pub lp_treasury_cut: Fee,
 }
 
-#[derive(MarinadeInstructionAccounts)]
-#[ownerid(crate::ID)]
+#[derive(InstructionAccounts)]
+#[accounts(ownerid=crate::ID,data=InitializeData)]
 pub struct InitializeAccounts {
     #[account(signer)]
     pub creator_authority: Pubkey,
@@ -61,8 +47,8 @@ pub struct InitializeAccounts {
     pub rent: Pubkey,
 }
 
-#[derive(MarinadeInstructionAccounts)]
-#[ownerid(crate::ID)]
+#[derive(InstructionAccounts)]
+#[accounts(ownerid=crate::ID,data=LiqPoolInitializeData)]
 pub struct LiqPoolInitializeAccounts {
     pub lp_mint: Pubkey,
     pub sol_leg_pda: Pubkey,

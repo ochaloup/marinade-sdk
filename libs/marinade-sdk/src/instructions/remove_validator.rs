@@ -2,14 +2,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
 
 #[derive(
-    MarinadeInstructionData,
-    Clone,
-    Copy,
-    Debug,
-    Default,
-    PartialEq,
-    BorshSerialize,
-    BorshDeserialize,
+    InstructionData, Clone, Copy, Debug, Default, PartialEq, BorshSerialize, BorshDeserialize,
 )]
 #[discriminator([25, 96, 211, 155, 161, 14, 168, 188])]
 pub struct RemoveValidatorData {
@@ -17,8 +10,8 @@ pub struct RemoveValidatorData {
     pub validator_vote: Pubkey,
 }
 
-#[derive(MarinadeInstructionAccounts)]
-#[ownerid(crate::ID)]
+#[derive(InstructionAccounts)]
+#[accounts(ownerid=crate::ID,data=RemoveValidatorData)]
 pub struct RemoveValidatorAccounts {
     #[account(mut)]
     pub marinade: Pubkey, // state

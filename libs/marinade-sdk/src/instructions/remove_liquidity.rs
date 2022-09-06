@@ -2,22 +2,15 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
 
 #[derive(
-    MarinadeInstructionData,
-    Clone,
-    Copy,
-    Debug,
-    Default,
-    PartialEq,
-    BorshSerialize,
-    BorshDeserialize,
+    InstructionData, Clone, Copy, Debug, Default, PartialEq, BorshSerialize, BorshDeserialize,
 )]
 #[discriminator([80, 85, 209, 72, 24, 206, 177, 108])]
 pub struct RemoveLiquidityData {
     pub tokens: u64,
 }
 
-#[derive(MarinadeInstructionAccounts)]
-#[ownerid(crate::ID)]
+#[derive(InstructionAccounts)]
+#[accounts(ownerid=crate::ID,data=RemoveLiquidityData)]
 pub struct RemoveLiquidityAccounts {
     #[account(mut)]
     pub marinade: Pubkey, // state

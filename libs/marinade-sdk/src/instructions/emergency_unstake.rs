@@ -2,14 +2,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
 
 #[derive(
-    MarinadeInstructionData,
-    Clone,
-    Copy,
-    Debug,
-    Default,
-    PartialEq,
-    BorshSerialize,
-    BorshDeserialize,
+    InstructionData, Clone, Copy, Debug, Default, PartialEq, BorshSerialize, BorshDeserialize,
 )]
 #[discriminator([123, 69, 168, 195, 183, 213, 199, 214])]
 pub struct EmergencyUnstakeData {
@@ -17,8 +10,8 @@ pub struct EmergencyUnstakeData {
     pub validator_index: u32,
 }
 
-#[derive(MarinadeInstructionAccounts)]
-#[ownerid(crate::ID)]
+#[derive(InstructionAccounts)]
+#[accounts(ownerid=crate::ID,data=EmergencyUnstakeData)]
 pub struct EmergencyUnstakeAccounts {
     #[account(mut)]
     pub marinade: Pubkey, // state

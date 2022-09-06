@@ -11,6 +11,7 @@ use solana_program::{
     sysvar::{clock, rent},
 };
 
+use crate::instructions::add_liquidity::{AddLiquidityAccounts, AddLiquidityData};
 use crate::instructions::deposit::{DepositAccounts, DepositData};
 use crate::instructions::deposit_stake_account::{
     DepositStakeAccountAccounts, DepositStakeAccountData,
@@ -320,6 +321,12 @@ pub trait MarinadeHelpers {
         rent_payer: Pubkey,
     ) -> Instruction;
     fn deposit(&self, data: DepositData, transfer_from: Pubkey, mint_to: Pubkey) -> Instruction;
+    fn add_liquidity(
+        &self,
+        data: AddLiquidityData,
+        transfer_from: Pubkey,
+        mint_to: Pubkey,
+    ) -> Instruction;
 }
 
 impl<T> MarinadeHelpers for T
@@ -435,6 +442,29 @@ where
                 transfer_from,
                 mint_to,
                 msol_mint_authority: self.msol_mint_authority(),
+                system_program: system_program::ID,
+                token_program: spl_token::ID,
+            },
+            data,
+        };
+        (&builder).into()
+    }
+
+    fn add_liquidity(
+        &self,
+        data: AddLiquidityData,
+        transfer_from: Pubkey,
+        mint_to: Pubkey,
+    ) -> Instruction {
+        let builder = InstructionBuilder {
+            accounts: AddLiquidityAccounts {
+                marinade: self.key(),
+                lp_mint: self.as_ref().liq_pool.lp_mint,
+                lp_mint_authority: self.lp_mint_authority(),
+                liq_pool_sol_leg_pda: self.liq_pool_sol_leg_address(),
+                liq_pool_msol_leg: self.as_ref().liq_pool.msol_leg,
+                transfer_from,
+                mint_to,
                 system_program: system_program::ID,
                 token_program: spl_token::ID,
             },
