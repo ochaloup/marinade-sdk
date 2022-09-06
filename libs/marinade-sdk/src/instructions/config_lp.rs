@@ -3,14 +3,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
 
 #[derive(
-    MarinadeInstructionData,
-    Clone,
-    Copy,
-    Debug,
-    Default,
-    PartialEq,
-    BorshSerialize,
-    BorshDeserialize,
+    InstructionData, Clone, Copy, Debug, Default, PartialEq, BorshSerialize, BorshDeserialize,
 )]
 #[discriminator([10, 24, 168, 119, 86, 48, 225, 17])]
 pub struct ConfigLpData {
@@ -20,8 +13,8 @@ pub struct ConfigLpData {
     pub treasury_cut: Option<Fee>,
 }
 
-#[derive(MarinadeInstructionAccounts)]
-#[ownerid(crate::ID)]
+#[derive(InstructionAccounts)]
+#[accounts(ownerid=crate::ID, data=ConfigLpData)]
 pub struct ConfigLpAccounts {
     #[account(mut)]
     pub marinade: Pubkey,

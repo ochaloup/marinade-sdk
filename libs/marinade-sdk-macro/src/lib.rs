@@ -2,17 +2,18 @@ use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use quote::{quote, ToTokens};
 use syn::__private::TokenStream2;
+use syn::parse::{Parse, ParseStream};
 use syn::{parse_macro_input, punctuated::Punctuated, DeriveInput, Path, Token};
-use syn_unnamed_struct::Meta;
+use syn_unnamed_struct::{Meta, MetaPath};
 
 /// Example of macro generation that generates
 /// `impl InstructionData` and `Discriminator`
 ///
 /// ```
-/// use marinade_sdk_macro::MarinadeInstructionData;
+/// use marinade_sdk_macro::InstructionData;
 /// use borsh::{BorshDeserialize, BorshSerialize};
 ///
-/// #[derive(MarinadeInstructionData, BorshSerialize, BorshDeserialize)]
+/// #[derive(InstructionData, BorshSerialize, BorshDeserialize)]
 /// #[discriminator([1,2,3,4,5,6,7,8])]
 /// pub struct TestData {
 ///   pub lamports: u64
@@ -35,7 +36,7 @@ use syn_unnamed_struct::Meta;
 ///   const DISCRIMINATOR: [u8; 8] = ([1,2,3,4,5,6,7,8]);
 /// }
 /// ```
-#[proc_macro_derive(MarinadeInstructionData, attributes(discriminator))]
+#[proc_macro_derive(InstructionData, attributes(discriminator))]
 pub fn derive_instruction_data(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
     let DeriveInput { ident, attrs, .. } = &input;
@@ -64,7 +65,7 @@ pub fn derive_instruction_data(input: TokenStream) -> TokenStream {
         };
         output.extend(discriminator_impl);
     } else {
-        panic!("Discriminator attribute is required for macro MarinadeInstructionData, as parameter required [u8;8].")
+        panic!("Discriminator attribute is required for macro InstructionData, as parameter required [u8;8].")
     }
 
     output.into()
@@ -103,13 +104,35 @@ impl AccountsFieldData {
     }
 }
 
+struct AccountsNameValueParser {
+    pub path: MetaPath,
+    pub _eq_token: Token![=],
+    pub value: Path,
+}
+impl Parse for AccountsNameValueParser {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let path = input.parse::<MetaPath>()?;
+        Ok(AccountsNameValueParser {
+            path,
+            _eq_token: input.parse()?,
+            value: input.parse()?,
+        })
+    }
+}
+
+#[derive(Default)]
+struct AccountsMetaAttributes {
+    pub owner_id: Option<TokenStream2>,
+    pub data_struct_name: Option<TokenStream2>,
+}
+
 fn get_related_struct_idents(
     struct_name_as_string: String,
 ) -> (proc_macro2::Ident, proc_macro2::Ident) {
     let struct_name_stripped = struct_name_as_string.strip_suffix("Accounts");
     if struct_name_stripped.is_none() {
         panic!(
-            "Struct {} annotated with MarinadeInstructionAccounts is expected to have a name ending with 'Accounts'",
+            "Struct {} annotated with InstructionAccounts is expected to have a name ending with 'Accounts'",
             struct_name_as_string
         );
     }
@@ -171,18 +194,18 @@ fn emit_struct_fields_at_pattern(
 /// and all micro anchor implementations required for the instruction would work.
 ///
 /// ```
-/// use marinade_sdk_macro::{MarinadeInstructionAccounts, MarinadeInstructionData};
+/// use marinade_sdk_macro::{InstructionAccounts, InstructionData};
 /// use borsh::{BorshDeserialize, BorshSerialize};
 ///
 /// // TestData is reequired as this macro depends on existent of it, based on its name!
-/// #[derive(MarinadeInstructionData, BorshSerialize, BorshDeserialize)]
+/// #[derive(InstructionData, BorshSerialize, BorshDeserialize)]
 /// #[discriminator([1,2,3,4,5,6,7,8])]
 /// pub struct TestData {
 ///   pub lamports: u64
 /// }
 ///
-/// #[derive(MarinadeInstructionAccounts)]
-/// #[ownerid(solana_program::bpf_loader::ID)]
+/// #[derive(InstructionAccounts)]
+/// #[accounts(ownerid=solana_program::bpf_loader::ID, data=TestData)]
 /// pub struct TestAccounts {
 ///     #[account(mut)]
 ///     pub marinade: solana_program::pubkey::Pubkey,
@@ -190,10 +213,10 @@ fn emit_struct_fields_at_pattern(
 /// ```
 ///
 /// ```
-/// use marinade_sdk_macro::MarinadeInstructionData;
+/// use marinade_sdk_macro::InstructionData;
 /// use borsh::{BorshDeserialize, BorshSerialize};
 ///
-/// #[derive(MarinadeInstructionData, BorshSerialize, BorshDeserialize)]
+/// #[derive(InstructionData, BorshSerialize, BorshDeserialize)]
 /// #[discriminator([1,2,3,4,5,6,7,8])]
 /// pub struct TestData {
 ///   pub lamports: u64
@@ -248,7 +271,7 @@ fn emit_struct_fields_at_pattern(
 ///     }
 /// }
 /// ```
-#[proc_macro_derive(MarinadeInstructionAccounts, attributes(account, ownerid))]
+#[proc_macro_derive(InstructionAccounts, attributes(account, accounts))]
 pub fn derive_instruction_accounts(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
     let DeriveInput {
@@ -257,25 +280,39 @@ pub fn derive_instruction_accounts(input: TokenStream) -> TokenStream {
 
     let struct_name = ident.clone();
 
-    // ownerid attribute is required
-    let owner_ids = attrs
+    let mut meta_attributes = AccountsMetaAttributes::default();
+    attrs
         .iter()
-        .filter(|a| a.path.is_ident("ownerid"))
+        .filter(|a| a.path.is_ident("accounts"))
         .flat_map(|attr| {
-            attr.parse_args_with(Punctuated::<Path, Token![,]>::parse_terminated)
-                .expect("Could not parse 'ownerid' attribute")
+            attr.parse_args_with(Punctuated::<AccountsNameValueParser, Token![,]>::parse_terminated)
+                .expect("Could not parse 'accounts' attribute")
         })
-        .collect::<Vec<_>>();
-    if owner_ids.len() != 1 {
-        panic!("'ownerid' attribute is required for macro MarinadeInstructionAccounts, one parameter of kind identifier of type Pubkey is required")
+        .for_each(|meta| {
+            match meta.path.to_token_stream().to_string().as_str() {
+                "ownerid" => meta_attributes.owner_id = Some(meta.value.to_token_stream()),
+                "data" => meta_attributes.data_struct_name = Some(meta.value.to_token_stream()),
+                x => panic!("'accounts' attribute contain unexpected 'name' {}", x),
+            };
+        });
+    if meta_attributes.owner_id.is_none() {
+        panic!(
+            "'ownerid' argument of 'accounts' attribute is required for macro InstructionAccounts"
+        );
     }
-    let owner_id = owner_ids.get(0).unwrap();
+    let owner_id = meta_attributes.owner_id.unwrap();
 
-    let (data_struct_name, infos_struct_name) = get_related_struct_idents(struct_name.to_string());
+    let (generatad_data_struct_name, infos_struct_name) =
+        get_related_struct_idents(struct_name.to_string());
+    let data_struct_name = if meta_attributes.data_struct_name.is_some() {
+        meta_attributes.data_struct_name.unwrap()
+    } else {
+        generatad_data_struct_name.to_token_stream()
+    };
 
     let obj = match data {
         syn::Data::Struct(obj) => obj,
-        _ => panic!("Only structs supported in MarinadeInstructionAccounts macro"),
+        _ => panic!("Only structs supported in InstructionAccounts macro"),
     };
     let struct_fields = obj
         .fields
