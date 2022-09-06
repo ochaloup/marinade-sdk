@@ -13,6 +13,7 @@ use solana_program::{
 
 use crate::instructions::add_liquidity::{AddLiquidityAccounts, AddLiquidityData};
 use crate::instructions::change_authority::{ChangeAuthorityAccounts, ChangeAuthorityData};
+use crate::instructions::claim::{ClaimAccounts, ClaimData};
 use crate::instructions::config_lp::{ConfigLpAccounts, ConfigLpData};
 use crate::instructions::deposit::{DepositAccounts, DepositData};
 use crate::instructions::deposit_stake_account::{
@@ -336,6 +337,7 @@ pub trait MarinadeHelpers {
         transfer_sol_to: Pubkey,
         transfer_msol_to: Pubkey,
     ) -> Instruction;
+    fn claim(&self, ticket_account: Pubkey, transfer_sol_to: Pubkey) -> Instruction;
 }
 
 impl<T> MarinadeHelpers for T
@@ -503,6 +505,22 @@ where
                 liq_pool_msol_leg_authority: self.liq_pool_msol_leg_authority(),
                 system_program: system_program::ID,
                 token_program: spl_token::ID,
+            },
+            data,
+        };
+        (&builder).into()
+    }
+
+    fn claim(&self, ticket_account: Pubkey, transfer_sol_to: Pubkey) -> Instruction {
+        let data = ClaimData{};
+        let builder = InstructionBuilder {
+            accounts: ClaimAccounts {
+                marinade: self.key(),
+                reserve_pda: self.reserve_address(),
+                ticket_account,
+                transfer_sol_to,
+                system_program: system_program::ID,
+                clock: clock::ID,
             },
             data,
         };
