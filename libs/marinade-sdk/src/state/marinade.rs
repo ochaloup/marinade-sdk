@@ -19,6 +19,8 @@ use crate::instructions::deposit::{DepositAccounts, DepositData};
 use crate::instructions::deposit_stake_account::{
     DepositStakeAccountAccounts, DepositStakeAccountData,
 };
+use crate::instructions::liquid_unstake::{LiquidUnstakeAccounts, LiquidUnstakeData};
+use crate::instructions::order_unstake::{OrderUnstakeAccounts, OrderUnstakeData};
 use crate::instructions::remove_liquidity::{RemoveLiquidityAccounts, RemoveLiquidityData};
 use crate::{
     calc::{shares_from_value, value_from_shares},
@@ -35,7 +37,6 @@ use crate::{
 };
 use micro_anchor::{AccountDeserialize, Discriminator, InstructionBuilder, Owner};
 use std::mem::MaybeUninit;
-use crate::instructions::liquid_unstake::{LiquidUnstakeAccounts, LiquidUnstakeData};
 
 #[derive(Debug, BorshSerialize, BorshDeserialize, Clone)]
 pub struct Marinade {
@@ -344,7 +345,14 @@ pub trait MarinadeHelpers {
         data: LiquidUnstakeData,
         get_msol_from: Pubkey,
         get_msol_from_authority: Pubkey,
-        transfer_sol_to: Pubkey
+        transfer_sol_to: Pubkey,
+    ) -> Instruction;
+    fn order_unstake(
+        &self,
+        data: OrderUnstakeData,
+        burn_msol_from: Pubkey,
+        burn_msol_authority: Pubkey, // delegated or owner
+        new_ticket_account: Pubkey,
     ) -> Instruction;
 }
 
@@ -520,7 +528,7 @@ where
     }
 
     fn claim(&self, ticket_account: Pubkey, transfer_sol_to: Pubkey) -> Instruction {
-        let data = ClaimData{};
+        let data = ClaimData {};
         let builder = InstructionBuilder {
             accounts: ClaimAccounts {
                 marinade: self.key(),
@@ -540,7 +548,7 @@ where
         data: LiquidUnstakeData,
         get_msol_from: Pubkey,
         get_msol_from_authority: Pubkey,
-        transfer_sol_to: Pubkey
+        transfer_sol_to: Pubkey,
     ) -> Instruction {
         let builder = InstructionBuilder {
             accounts: LiquidUnstakeAccounts {
@@ -554,6 +562,29 @@ where
                 treasury_msol_account: self.as_ref().treasury_msol_account,
                 system_program: system_program::ID,
                 token_program: spl_token::ID,
+            },
+            data,
+        };
+        (&builder).into()
+    }
+
+    fn order_unstake(
+        &self,
+        data: OrderUnstakeData,
+        burn_msol_from: Pubkey,
+        burn_msol_authority: Pubkey, // delegated or owner
+        new_ticket_account: Pubkey,
+    ) -> Instruction {
+        let builder = InstructionBuilder {
+            accounts: OrderUnstakeAccounts {
+                marinade: self.key(),
+                msol_mint: self.as_ref().msol_mint,
+                burn_msol_from,
+                burn_msol_authority,
+                new_ticket_account,
+                clock: clock::ID,
+                token_program: spl_token::ID,
+                rent: rent::ID,
             },
             data,
         };
